@@ -32,6 +32,9 @@ TARGET_OTA_ASSERT_DEVICE := waffle
 # TWRP specific build flags
 TW_FRAMERATE := 120
 
+# Enable event log
+TWRP_EVENT_LOGGING := true
+
 # Vibrator
 # TW_USE_QCOM_HAPTICS_VIBRATOR := true
 TW_SUPPORT_INPUT_AIDL_HAPTICS := true
