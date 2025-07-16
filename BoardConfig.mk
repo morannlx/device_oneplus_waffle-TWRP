@@ -33,7 +33,10 @@ TARGET_OTA_ASSERT_DEVICE := waffle
 TW_FRAMERATE := 120
 
 # Enable event log
-TWRP_EVENT_LOGGING := true
+# TWRP_EVENT_LOGGING := true
+
+# Fix Touchscreen issue
+TW_NO_SCREEN_BLANK := true
 
 # Vibrator
 # TW_USE_QCOM_HAPTICS_VIBRATOR := true
