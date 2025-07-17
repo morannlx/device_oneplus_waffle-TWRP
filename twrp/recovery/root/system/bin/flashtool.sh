@@ -1,0 +1,269 @@
+#!/sbin/sh
+##添加环境变量
+export OUTFD=$2;
+export ZIPFILE="$3";
+
+#package=$(dirname $ZIPFILE)/update.zip
+package=$1
+
+exho "var 1"
+echo $package
+echo "VAR 2"
+echo $2
+exit 1
+
+#此处来源magisk的utils_funtion
+show_progress() {
+   echo "progress $1 $2" >> /proc/self/fd/$OUTFD; 
+}
+
+ui_print() {
+  until [ ! "$1" ]; do
+    echo "ui_print $1
+      ui_print" >> /proc/self/fd/$OUTFD;
+    shift;
+  done;
+}
+
+abort(){
+  until [ ! "$1" ]; do
+    echo "ui_print $1
+      ui_print" >> /proc/self/fd/$OUTFD;
+    shift;
+  done;
+  exit 1
+}
+
+grep_cmdline() {
+  local REGEX="s/^$1=//p"
+  { echo $(cat /proc/cmdline)$(sed -e 's/[^"]//g' -e 's/""//g' /proc/cmdline) | xargs -n 1; \
+    sed -e 's/ = /=/g' -e 's/, /,/g' -e 's/"//g' /proc/bootconfig; \
+  } 2>/dev/null | sed -n "$REGEX"
+}
+
+get_slot(){
+   # Check A/B slot
+  SLOT=`grep_cmdline androidboot.slot_suffix`
+  if [ -z $SLOT ]; then
+    SLOT=`grep_cmdline androidboot.slot`
+    [ -z $SLOT ] || SLOT=_${SLOT}
+  fi
+  [ "$SLOT" = "normal" ] && unset SLOT
+  [ -z $SLOT ] || 
+  echo $SLOT
+}
+
+##合成函数
+mksuper(){
+Imgdir=$1
+outputimg=$2
+superpa="--metadata-size $metadatasize --super-name super --virtual-ab -block-size=4096 "
+for imag in $(basename -a "$Imgdir"/*.img);do
+image=$(echo "$imag" | sed 's/_a.img//g' | sed 's/_b.img//g'| sed 's/.img//g')
+img_size=$(wc -c <$Imgdir/$image.img)
+superpa+="--partition "$image"_a:readonly:$img_size:${super_group}_a --image "$image"_a=$Imgdir/$image.img "
+done
+
+superpa+="--device super:$supersize "
+superpa+="--metadata-slots 3 "
+superpa+="--group ${super_group}_a:$groupsize "
+superpa+="--group cow:0 "
+superpa+="-F --output $outputimg"
+lpmake $superpa
+}
+##刷写分区函数
+flashImg(){
+  Imgdir=$1
+  for file in `ls $Imgdir`
+    do
+      name=$(basename $file .img)
+      cat $Imgdir/$file > /dev/block/by-name/${name}_a
+      cat $Imgdir/$file > /dev/block/by-name/${name}_a
+    done
+}
+
+
+#变量声明
+##如果你的super损坏了，可以用可视化查看payload的动态分区信息，并替换下面的参数
+supersize=$(lpdump /dev/block/by-name/super | grep 'Size:' | awk '{print $2}')
+groupsize=$(lpdump /dev/block/by-name/super | grep 'Maximum size:' | awk 'NR==2' | awk '{print $3}')
+metadatasize=$(lpdump /dev/block/by-name/super |grep 'Metadata max size: ' |  awk '{print $4}')
+super_group=qti_dynamic_partitions
+tmpdir=/sdcard/tmp/tmp
+
+ui_print "This package is an official package tool for TWRP assisted browsing"
+ui_print "This tool cannot verify whether the scanned package is the corresponding model package"
+ui_print "The author is not responsible for any situations caused by the use of this tool"
+ui_print ""
+slot=$(get_slot)
+ui_print "Unpacking OTA zip.... "
+ui_print ""
+ui_print "Current slot: $slot"
+ui_print " "
+ui_print "=================================="
+ui_print " " 
+ui_print ""
+ui_print "author: 淡存@CoolAPK"
+ui_print "mod:    SnowWolf725@XDA" 
+ui_print ""
+ui_print "version:3.5"
+ui_print " " 
+ui_print ""
+ui_print "=================================="
+ui_print " "
+ui_print "Unpacking OTA zip.... "
+
+show_progress 0.1 10;
+
+rm -rf $tmpdir
+mkdir -p $tmpdir
+## 解压官方包
+ui_print "Extracting OTA file"
+startTime=`date +%Y%m%d-%H:%M:%S`
+startTime_s=`date +%s`
+
+
+unzip -o "$package" "payload.bin" -d $tmpdir
+
+endTime=`date +%Y%m%d-%H:%M:%S`
+endTime_s=`date +%s`
+let sumTime=$endTime_s-$startTime_s
+ui_print "Time spent on extracting OTA file : $startTime ---> $endTime  Total:$sumTime seconds"
+
+show_progress 0.4 100;
+
+##解包payload.bin
+ui_print "Extracting payload.bin"
+ [ ! -s $tmpdir/payload.bin ] && abort "$tmpdir/payload.bin not exist."
+startTime=`date +%Y%m%d-%H:%M:%S`
+startTime_s=`date +%s`
+[ ! -d $tmpdir ] && mkdir $tmpdir
+rm -rf $tmpdir/payload
+mkdir -p $tmpdir/payload
+payload -o $tmpdir/payload $tmpdir/payload.bin 1>/dev/null || abort "File corrupted, please redownload."
+##计时工具
+endTime=`date +%Y%m%d-%H:%M:%S`
+endTime_s=`date +%s`
+let sumTime=$endTime_s-$startTime_s
+ui_print "Time spent on extracting payload.bin : $startTime ---> $endTime  Total:$sumTime seconds"
+rm -rf $tmpdir/payload.bin
+
+show_progress 0.1 10;
+
+##Check version 
+unzip -o "$package" "payload_properties.txt" -d $tmpdir/
+if grep -q "PJD110" "$tmpdir/payload_properties.txt"; then
+    version="CN"
+elif grep -q "CPH2573" "$tmpdir/payload_properties.txt"; then
+    version="IN"
+elif grep -q "CPH2581" "$tmpdir/payload_properties.txt"; then
+    version="EU"
+elif grep -q "CPH2583" "$tmpdir/payload_properties.txt"; then
+    version="NA"
+else
+    ui_print "Unknown Version"
+    version="UN"
+fi
+
+##提取缺失分区
+unzip -j -o "$ZIPFILE" "bin/$version/my_company.img" -d $tmpdir/payload/
+if [ ! -s $tmpdir/payload/my_company.img ] 
+then
+  ui_print "Pick-up missed partition (my_company)"
+  ##不存在文件，从系统提取分区
+  cat /dev/block/mapper/my_company$slot > $tmpdir/payload/my_company.img
+  [ ! -s $tmpdir/payload/my_company.img ] && abort "my_company.img is not found"
+fi
+
+unzip -j -o "$ZIPFILE" "bin/$version/my_preload.img" -d $tmpdir/payload/
+if [ ! -s $tmpdir/payload/my_preload.img ] 
+then
+  ui_print "Pick-up missed partition (my_preload)"
+  ##不存在文件，从系统提取分区
+  cat /dev/block/mapper/my_preload$slot > $tmpdir/payload/my_preload.img
+  [ ! -s $tmpdir/payload/my_preload.img ] && abort "my_preload.img not found"
+fi
+
+##删除persist, modemst1, modemst2, ocdt
+if [ -s $tmpdir/payload/modemst1.img ] 
+then
+   rm $tmpdir/payload/modemst1.img
+fi
+if [ -s $tmpdir/payload/modemst2.img ] 
+then
+   rm $tmpdir/payload/modemst2.img
+fi
+if [ -s $tmpdir/payload/ocdt.img ] 
+then
+   rm $tmpdir/payload/ocdt.img
+fi
+if [ -s $tmpdir/payload/persist.img ] 
+then
+   rm $tmpdir/payload/persist.img
+fi
+if [ -s $tmpdir/payload/recovery.img ] 
+then
+   rm $tmpdir/payload/recovery.img
+fi
+
+show_progress 0.1 10;
+
+##合成super
+ui_print "Creating Super.img"
+startTime=`date +%Y%m%d-%H:%M:%S`
+startTime_s=`date +%s`
+rm -rf $tmpdir/super
+mkdir  $tmpdir/super
+for img in my_bigball.img my_carrier.img my_company.img my_engineering.img my_heytap.img my_manifest.img my_preload.img my_product.img my_region.img my_stock.img odm.img product.img system.img system_dlkm.img system_ext.img vendor.img vendor_dlkm.img
+do
+mv -f $tmpdir/payload/$img  $tmpdir/super
+done
+mksuper $tmpdir/super $tmpdir/super.img
+rm -rf $tmpdir/super
+##计时工具
+endTime=`date +%Y%m%d-%H:%M:%S`
+endTime_s=`date +%s`
+let sumTime=$endTime_s-$startTime_s
+ui_print "Time spent on  creating Super.img: $startTime ---> $endTime  Total:$sumTime seconds"
+[ ! -s $tmpdir/super.img ] && abort "$tmpdir/super.img not exist!"
+
+show_progress 0.1 5;
+
+##刷入分区
+ui_print "Flashing images"
+startTime=`date +%Y%m%d-%H:%M:%S`
+startTime_s=`date +%s`
+flashImg $tmpdir/payload
+##计时工具
+endTime=`date +%Y%m%d-%H:%M:%S`
+endTime_s=`date +%s`
+let sumTime=$endTime_s-$startTime_s
+ui_print "Time spent on flashing images: $startTime ---> $endTime  Total:$sumTime seconds"
+
+show_progress 0.1 10;
+
+ui_print "Flashing Super image"
+startTime=`date +%Y%m%d-%H:%M:%S`
+startTime_s=`date +%s`
+cat $tmpdir/super.img > /dev/block/by-name/super
+##计时工具
+endTime=`date +%Y%m%d-%H:%M:%S`
+endTime_s=`date +%s`
+let sumTime=$endTime_s-$startTime_s
+ui_print "Time spent on flashing Super image: $startTime ---> $endTime  Total:$sumTime seconds"
+
+## 启动顺序
+ui_print "Modify active slot"
+bootctl set-active-boot-slot 0
+resetprop ro.boot.slot_suffix _a
+##关闭avb
+#ui_print "Disable avb"
+#avbctl disable-verity --force
+#avbctl disable-verification --force
+
+##清除缓存
+ui_print "Cleaning tmp folder"
+rm -rf /tmp
+rm -rf  $tmpdir
+
+show_progress 0.1 10;
