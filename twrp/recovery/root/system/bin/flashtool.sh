@@ -9,10 +9,9 @@ exho "var 1"
 echo $package
 echo "VAR 2"
 echo $2
-exit 1
 
 show_progress() {
-   echo "progress $1 $2" >> /proc/self/fd/$OUTFD; 
+  echo "progress $1 $2" >> /proc/self/fd/$OUTFD; 
 }
 
 ui_print() {
@@ -53,21 +52,21 @@ get_slot(){
 
 ##make super partition
 mksuper(){
-Imgdir=$1
-outputimg=$2
-superpa="--metadata-size $metadatasize --super-name super --virtual-ab -block-size=4096 "
-for imag in $(basename -a "$Imgdir"/*.img);do
-image=$(echo "$imag" | sed 's/_a.img//g' | sed 's/_b.img//g'| sed 's/.img//g')
-img_size=$(wc -c <$Imgdir/$image.img)
-superpa+="--partition "$image"_a:readonly:$img_size:${super_group}_a --image "$image"_a=$Imgdir/$image.img "
-done
+  Imgdir=$1
+  outputimg=$2
+  superpa="--metadata-size $metadatasize --super-name super --virtual-ab -block-size=4096 "
+  for imag in $(basename -a "$Imgdir"/*.img);do
+    image=$(echo "$imag" | sed 's/_a.img//g' | sed 's/_b.img//g'| sed 's/.img//g')
+    img_size=$(wc -c <$Imgdir/$image.img)
+    superpa+="--partition "$image"_a:readonly:$img_size:${super_group}_a --image "$image"_a=$Imgdir/$image.img "
+  done
 
-superpa+="--device super:$supersize "
-superpa+="--metadata-slots 3 "
-superpa+="--group ${super_group}_a:$groupsize "
-superpa+="--group cow:0 "
-superpa+="-F --output $outputimg"
-lpmake $superpa
+  superpa+="--device super:$supersize "
+  superpa+="--metadata-slots 3 "
+  superpa+="--group ${super_group}_a:$groupsize "
+  superpa+="--group cow:0 "
+  superpa+="-F --output $outputimg"
+  lpmake $superpa
 }
 ##flash image
 flashImg(){
@@ -119,6 +118,7 @@ ui_print "Extracting OTA file"
 startTime=`date +%Y%m%d-%H:%M:%S`
 startTime_s=`date +%s`
 
+exit 1
 
 unzip -o "$package" "payload.bin" -d $tmpdir
 
