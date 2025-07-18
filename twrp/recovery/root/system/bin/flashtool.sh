@@ -5,12 +5,6 @@ export OUTFD=$4;
 #package=$(dirname $ZIPFILE)/update.zip
 package=$1
 
-echo $package
-echo $2
-echo $3
-echo $4
-echo $5
-
 show_progress() {
   echo "progress $1 $2" >> /proc/self/fd/$OUTFD; 
 }
