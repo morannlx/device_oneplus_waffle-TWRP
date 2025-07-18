@@ -1,6 +1,6 @@
 #!/sbin/sh
-##添加环境变量
-export OUTFD=$2;
+##setup variable 
+export OUTFD=$4;
 export ZIPFILE="$3";
 
 #package=$(dirname $ZIPFILE)/update.zip
@@ -53,7 +53,7 @@ get_slot(){
   echo $SLOT
 }
 
-##合成函数
+##make super partition
 mksuper(){
 Imgdir=$1
 outputimg=$2
@@ -71,7 +71,7 @@ superpa+="--group cow:0 "
 superpa+="-F --output $outputimg"
 lpmake $superpa
 }
-##刷写分区函数
+##flash image
 flashImg(){
   Imgdir=$1
   for file in `ls $Imgdir`
@@ -83,8 +83,7 @@ flashImg(){
 }
 
 
-#变量声明
-##如果你的super损坏了，可以用可视化查看payload的动态分区信息，并替换下面的参数
+# super partition variable 
 supersize=$(lpdump /dev/block/by-name/super | grep 'Size:' | awk '{print $2}')
 groupsize=$(lpdump /dev/block/by-name/super | grep 'Maximum size:' | awk 'NR==2' | awk '{print $3}')
 metadatasize=$(lpdump /dev/block/by-name/super |grep 'Metadata max size: ' |  awk '{print $4}')
@@ -132,7 +131,7 @@ ui_print "Time spent on extracting OTA file : $startTime ---> $endTime  Total:$s
 
 show_progress 0.4 100;
 
-##解包payload.bin
+## unpack payload.bin
 ui_print "Extracting payload.bin"
  [ ! -s $tmpdir/payload.bin ] && abort "$tmpdir/payload.bin not exist."
 startTime=`date +%Y%m%d-%H:%M:%S`
@@ -141,7 +140,7 @@ startTime_s=`date +%s`
 rm -rf $tmpdir/payload
 mkdir -p $tmpdir/payload
 payload -o $tmpdir/payload $tmpdir/payload.bin 1>/dev/null || abort "File corrupted, please redownload."
-##计时工具
+## timer
 endTime=`date +%Y%m%d-%H:%M:%S`
 endTime_s=`date +%s`
 let sumTime=$endTime_s-$startTime_s
@@ -165,12 +164,12 @@ else
     version="UN"
 fi
 
-##提取缺失分区
+##pickup missing partition 
 unzip -j -o "$ZIPFILE" "bin/$version/my_company.img" -d $tmpdir/payload/
 if [ ! -s $tmpdir/payload/my_company.img ] 
 then
   ui_print "Pick-up missed partition (my_company)"
-  ##不存在文件，从系统提取分区
+  ##pickup image from device 
   cat /dev/block/mapper/my_company$slot > $tmpdir/payload/my_company.img
   [ ! -s $tmpdir/payload/my_company.img ] && abort "my_company.img is not found"
 fi
@@ -179,12 +178,12 @@ unzip -j -o "$ZIPFILE" "bin/$version/my_preload.img" -d $tmpdir/payload/
 if [ ! -s $tmpdir/payload/my_preload.img ] 
 then
   ui_print "Pick-up missed partition (my_preload)"
-  ##不存在文件，从系统提取分区
+  ##pickup image from device 
   cat /dev/block/mapper/my_preload$slot > $tmpdir/payload/my_preload.img
   [ ! -s $tmpdir/payload/my_preload.img ] && abort "my_preload.img not found"
 fi
 
-##删除persist, modemst1, modemst2, ocdt
+# delete persist, modemst1, modemst2, ocdt
 if [ -s $tmpdir/payload/modemst1.img ] 
 then
    rm $tmpdir/payload/modemst1.img
@@ -208,7 +207,7 @@ fi
 
 show_progress 0.1 10;
 
-##合成super
+##create super
 ui_print "Creating Super.img"
 startTime=`date +%Y%m%d-%H:%M:%S`
 startTime_s=`date +%s`
@@ -220,7 +219,7 @@ mv -f $tmpdir/payload/$img  $tmpdir/super
 done
 mksuper $tmpdir/super $tmpdir/super.img
 rm -rf $tmpdir/super
-##计时工具
+##timer
 endTime=`date +%Y%m%d-%H:%M:%S`
 endTime_s=`date +%s`
 let sumTime=$endTime_s-$startTime_s
@@ -229,12 +228,12 @@ ui_print "Time spent on  creating Super.img: $startTime ---> $endTime  Total:$su
 
 show_progress 0.1 5;
 
-##刷入分区
+##flash image
 ui_print "Flashing images"
 startTime=`date +%Y%m%d-%H:%M:%S`
 startTime_s=`date +%s`
 flashImg $tmpdir/payload
-##计时工具
+##timer
 endTime=`date +%Y%m%d-%H:%M:%S`
 endTime_s=`date +%s`
 let sumTime=$endTime_s-$startTime_s
@@ -246,22 +245,22 @@ ui_print "Flashing Super image"
 startTime=`date +%Y%m%d-%H:%M:%S`
 startTime_s=`date +%s`
 cat $tmpdir/super.img > /dev/block/by-name/super
-##计时工具
+##timer
 endTime=`date +%Y%m%d-%H:%M:%S`
 endTime_s=`date +%s`
 let sumTime=$endTime_s-$startTime_s
 ui_print "Time spent on flashing Super image: $startTime ---> $endTime  Total:$sumTime seconds"
 
-## 启动顺序
+## set active slot
 ui_print "Modify active slot"
 bootctl set-active-boot-slot 0
 resetprop ro.boot.slot_suffix _a
-##关闭avb
+## disable avb
 #ui_print "Disable avb"
 #avbctl disable-verity --force
 #avbctl disable-verification --force
 
-##清除缓存
+##clean
 ui_print "Cleaning tmp folder"
 rm -rf /tmp
 rm -rf  $tmpdir
