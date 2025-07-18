@@ -100,10 +100,7 @@ ui_print " "
 ui_print "=================================="
 ui_print " " 
 ui_print ""
-ui_print "author: 淡存@CoolAPK"
-ui_print "mod:    SnowWolf725@XDA" 
-ui_print ""
-ui_print "version:3.5"
+ui_print "          FlashTool V3.7          "
 ui_print " " 
 ui_print ""
 ui_print "=================================="
@@ -164,7 +161,7 @@ else
 fi
 
 ##pickup missing partition 
-unzip -j -o "$ZIPFILE" "bin/$version/my_company.img" -d $tmpdir/payload/
+#unzip -j -o "$ZIPFILE" "bin/$version/my_company.img" -d $tmpdir/payload/
 if [ ! -s $tmpdir/payload/my_company.img ] 
 then
   ui_print "Pick-up missed partition (my_company)"
@@ -173,7 +170,7 @@ then
   [ ! -s $tmpdir/payload/my_company.img ] && abort "my_company.img is not found"
 fi
 
-unzip -j -o "$ZIPFILE" "bin/$version/my_preload.img" -d $tmpdir/payload/
+#unzip -j -o "$ZIPFILE" "bin/$version/my_preload.img" -d $tmpdir/payload/
 if [ ! -s $tmpdir/payload/my_preload.img ] 
 then
   ui_print "Pick-up missed partition (my_preload)"
@@ -214,7 +211,7 @@ rm -rf $tmpdir/super
 mkdir  $tmpdir/super
 for img in my_bigball.img my_carrier.img my_company.img my_engineering.img my_heytap.img my_manifest.img my_preload.img my_product.img my_region.img my_stock.img odm.img product.img system.img system_dlkm.img system_ext.img vendor.img vendor_dlkm.img
 do
-mv -f $tmpdir/payload/$img  $tmpdir/super
+  mv -f $tmpdir/payload/$img  $tmpdir/super
 done
 mksuper $tmpdir/super $tmpdir/super.img
 rm -rf $tmpdir/super
