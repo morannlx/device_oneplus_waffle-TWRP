@@ -1,7 +1,6 @@
 #!/sbin/sh
 ##setup variable 
 export OUTFD=$4;
-export ZIPFILE="$3";
 
 #package=$(dirname $ZIPFILE)/update.zip
 package=$1
@@ -12,7 +11,6 @@ echo "VAR 2"
 echo $2
 exit 1
 
-#此处来源magisk的utils_funtion
 show_progress() {
    echo "progress $1 $2" >> /proc/self/fd/$OUTFD; 
 }
@@ -116,7 +114,7 @@ show_progress 0.1 10;
 
 rm -rf $tmpdir
 mkdir -p $tmpdir
-## 解压官方包
+## unzip ota
 ui_print "Extracting OTA file"
 startTime=`date +%Y%m%d-%H:%M:%S`
 startTime_s=`date +%s`
