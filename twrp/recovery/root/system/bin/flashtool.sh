@@ -110,8 +110,6 @@ ui_print "Extracting OTA file"
 startTime=`date +%Y%m%d-%H:%M:%S`
 startTime_s=`date +%s`
 
-exit 1
-
 unzip -o "$package" "payload.bin" -d $tmpdir
 
 endTime=`date +%Y%m%d-%H:%M:%S`
