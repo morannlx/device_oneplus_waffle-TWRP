@@ -9,6 +9,38 @@ COMMON_SOC := sm86xx
 # Define hardware platform
 PRODUCT_PLATFORM := pineapple
 
+SHRP_DEVICE_CODE := waffle
+SHRP_PATH := device/oneplus/$(SHRP_DEVICE_CODE)
+SHRP_MAINTAINER := SnowWolf725
+SHRP_REC_TYPE := Treble
+SHRP_DEVICE_TYPE := A/B
+SHRP_REC := "/dev/block/bootdevice/by-name/recovery"
+SHRP_HAS_RECOVERY_PARTITION := true
+SHRP_AB := true
+SHRP_EDL_MODE := 1
+SHRP_INTERNAL := "/sdcard"
+SHRP_EXTERNAL := "/external_sd"
+SHRP_OTG := "/usb_otg"
+SHRP_FLASH := 1
+SHRP_STATUSBAR_RIGHT_PADDING := 58
+SHRP_STATUSBAR_LEFT_PADDING := 58
+SHRP_NOTCH := true
+SHRP_EXPRESS := true
+SHRP_EXPRESS_USE_DATA := true
+SHRP_DARK := true
+SHRP_CUSTOM_FLASHLIGHT := true
+SHRP_FONP_1 := "/sys/class/leds/led:torch_0/brightness"
+SHRP_FLASH_MAX_BRIGHTNESS := 500
+
+#SHRP_EXTERNAL_ADDON_PATH := "device/oneplus/$(SHRP_DEVICE_CODE)/Addons/"
+#SHRP_EXTERNAL_ADDON_1_NAME := "Limitless Photos"
+#SHRP_EXTERNAL_ADDON_1_INFO := "A Magisk/KSU module to unlock unlimited photos storage"
+#SHRP_EXTERNAL_ADDON_1_FILENAME := "LimitlessPhotos.zip"
+#SHRP_EXTERNAL_ADDON_1_BTN_TEXT := "Install"
+#SHRP_EXTERNAL_ADDON_1_SUCCESSFUL_TEXT := "Installed Limitless Photos"
+#SHRP_INC_IN_REC_EXTERNAL_ADDON_1 := true
+
+
 #
 #
 #
