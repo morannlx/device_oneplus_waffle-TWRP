@@ -38,6 +38,9 @@ TW_FRAMERATE := 120
 # Fix Touchscreen issue
 TW_NO_SCREEN_BLANK := true
 
+# Use rm instead of the format
+TW_ALWAYS_RMRF := true
+
 # Vibrator
 # TW_USE_QCOM_HAPTICS_VIBRATOR := true
 TW_SUPPORT_INPUT_AIDL_HAPTICS := true
